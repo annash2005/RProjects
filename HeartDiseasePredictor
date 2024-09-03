@@ -1,0 +1,94 @@
+install.packages(c("shiny","shinythemes","dplyr","ggplot2","randomForest"))
+
+HeartDisease <- read.csv('/Users/annashukhter/Downloads/Heart_Disease_Prediction.csv')
+View(HeartDisease)
+
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(shinythemes)
+library(randomForest)
+
+HeartDisease %>% filter(HeartDisease$Heart.Disease == "Presence") -> Present
+HeartDisease %>% filter(HeartDisease$Heart.Disease == "Absence") -> Absent
+
+
+ui<- fluidPage(theme = shinytheme("united"),
+               navbarPage("Heart Disease",
+                          tabPanel("Prediction",
+                                   sidebarPanel(
+                                     h2("Input"),
+                                     sliderInput("age", "Age:", min=min(HeartDisease$Age), max=max(HeartDisease$Age),value=53),
+                                     sliderInput("chestPain", "Chest Pain: ", min=min(HeartDisease$Chest.pain.type), max=max(HeartDisease$Chest.pain.type),value=2),
+                                     sliderInput("bloodPressure", "Blood Pressure: ", min=min(HeartDisease$BP), max=max(HeartDisease$BP),value=147),
+                                     sliderInput("cholesterol", "Cholesterol:", min=min(HeartDisease$Cholesterol), max=max(HeartDisease$Cholesterol),value=345),
+                                     sliderInput("eKGResults", "EKG Results:", min=min(HeartDisease$EKG.results), max=max(HeartDisease$EKG.results),value=1),
+                                     sliderInput("maxHR", "Max HR:", min=min(HeartDisease$Max.HR), max=max(HeartDisease$Max.HR),value=136),
+                                     sliderInput("sTDepression", "ST Depression:", min=min(HeartDisease$ST.depression), max=max(HeartDisease$ST.depression),value=3.1),
+                                     sliderInput("slopeOfST", "Slope Of ST", min=min(HeartDisease$Slope.of.ST), max=max(HeartDisease$Slope.of.ST),value=1),
+                                     sliderInput("numberOfVesselsFluro", "Number Of Vessels Fluro", min=min(HeartDisease$Number.of.vessels.fluro), max=max(HeartDisease$Number.of.vessels.fluro),value=1),
+                                     sliderInput("thallium", "Thallium:", min=min(HeartDisease$Thallium), max=max(HeartDisease$Thallium),value=5),
+                                     radioButtons("sex", "Sex:", choices = c("Male", "Female"), selected = "Female"),
+                                     checkboxInput("fBSOver120", "FBS Over 120" , value = FALSE),
+                                     checkboxInput("exerciseAngina", "Exercise Angina" , value = FALSE),
+                                     actionButton("submitBtn", "Make Prediction", class="btn btn-primary")
+                                   ), 
+                                   mainPanel(
+                                     tags$label(h3('Heart Disease Prediction')),
+                                     verbatimTextOutput('contents'),
+                                     tableOutput('tabledata')
+                                   )
+                          ),
+                          tabPanel("Graphs",
+                                   sidebarPanel(
+                                     radioButtons("absPres", label = "Show data for those in whom heart disease is:", choices = c("Present", "Absent"), selected = "Present")
+                                   ),
+                                   mainPanel(
+                                     h1("Cholestrol and Blood Pressure"),
+                                     plotOutput(outputId = "cholesterolBP")
+                                   ) 
+                          )
+                          
+               )
+)
+
+
+server <- function(input, output) {
+  #index = sample(2, nrow(HeartDisease), replace=T, prob=(c(0.7,0.3)))
+  #Training = HeartDisease[index==1,]
+  #Testing = HeartDisease[index==2,]
+  #Training <- na.omit(Training)
+  
+  RFM = randomForest(factor(Heart.Disease)~., data=HeartDisease)
+  #diseasePred <- predict(RFM, Testing)
+  #Testing$Heart.Disease.Pred = diseasePred
+  #View(Testing)
+  output$contents <- renderPrint({
+    if (input$submitBtn > 0){
+      inputData <- data.frame(Age = input$age, 
+                              Sex = input$sex, 
+                              Chest.pain.type = input$chestPain, 
+                              BP=input$bloodPressure,
+                              Cholesterol = input$cholesterol,
+                              FBS.over.120 = input$fBSOver120,
+                              EKG.results  = input$eKGResults,
+                              Max.HR = input$maxHR,
+                              Exercise.angina = input$exerciseAngina,
+                              ST.depression = input$sTDepression,
+                              Slope.of.ST = input$slopeOfST,
+                              Number.of.vessels.fluro = input$numberOfVesselsFluro,
+                              Thallium = input$thallium)
+      
+      predict(RFM, inputData)
+    }
+  })
+  output$cholesterolBP<- renderPlot({
+    if (input$absPres == "Present"){
+      ggplot(data = Present, aes(x = BP, y = Cholesterol)) + geom_point()
+    } else {
+      ggplot(data = Absent, aes(x = BP, y = Cholesterol)) + geom_point()
+    }
+  })
+}
+
+shinyApp(ui = ui, server = server)
