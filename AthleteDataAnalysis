@@ -1,22 +1,64 @@
-install.packages(c("ggplot2", "dplyr"))
-library(ggplot2)
+install.packages(c("shiny","shinythemes","dplyr","ggplot2"))
+library(shiny)
 library(dplyr)
-
-
+library(ggplot2)
+library(shinythemes)
 Summer <-read.csv('/Users/annashukhter/Documents/summer_olympics.csv')
 Summer %>% filter(Summer$Sport == "Synchronized Swimming")-> Synchro
-ggplot(data = Synchro, aes(x = Year, y = Age))+ geom_point()
-ggplot(data =Synchro, aes(x = Height )) + geom_histogram(fill = "blue")
+Summer %>% filter(Summer$Sport == "Diving")-> Dive
 
 
+ui<- fluidPage(
+ 
+  theme = shinytheme("cerulean"),
+  navbarPage(
+    "My Charts",
 
-Medals <- read.csv('/Users/annashukhter/Downloads/medals.csv')
-Medals %>% filter(Medals$Season == "Summer")-> Summer1
-ggplot(data = Summer1, aes(x = Medal , fill = as.factor(Medal))) + geom_bar()
-ggplot(data =Summer1, aes(x = Age))+ geom_histogram(fill = "blue")
+    tabPanel("Synchro",
+             sidebarPanel(
+               tags$h3("Input:"),
+               selectInput("type", label = "Athletes by Country", choices = rownames(table(Synchro$Country)), selected = "United States")
+             ),
+             mainPanel(
+               h1("Athletes"),
+               #verbatimTextOutput("txtout")
+               plotOutput(outputId = "synchro")
+             )
+    ),
+             
+    tabPanel("Diving",
+             sidebarPanel(
+               tags$h3("Input:"),
+               selectInput("divers", label = "Divers ", choices = rownames(table(Dive$Medal)), selected = "Gold")
+             ),
+             mainPanel(
+               h1("Diving Athletes by Medal"),
+               #verbatimTextOutput("txtout")
+               plotOutput(outputId = "dive")
+             )    
+    )
+  )          
+)
+
+server<- function(input, output){
 
 
+  output$synchro <- renderPlot({
+    Synchro %>% filter(Synchro$Country == input$type) -> athlete_Country
+     ggplot(data = athlete_Country, aes(x = Age))+ geom_histogram(fill = "blue")
+    })
+  
+  output$dive <- renderPlot({
+    Dive %>% filter(Dive$Medal == input$divers) -> dive_Medal
+    ggplot(data = dive_Medal,aes(x=Age, y=Year))+geom_point(color="red")
+  })
+  
+  
+  output$txtout <- renderText({
+    paste(input$txt1)
+  })
+}
 
-Fina <- read.csv('/Users/annashukhter/Downloads/FINA.csv')
-ggplot(data = Fina, aes(x = Edition, y = Athletes))+ geom_point()
+shinyApp(ui = ui, server = server)
 
+#runExample("01_hello")
