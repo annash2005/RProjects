@@ -1,0 +1,22 @@
+install.packages(c("ggplot2", "dplyr"))
+library(ggplot2)
+library(dplyr)
+
+
+Summer <-read.csv('/Users/annashukhter/Documents/summer_olympics.csv')
+Summer %>% filter(Summer$Sport == "Synchronized Swimming")-> Synchro
+ggplot(data = Synchro, aes(x = Year, y = Age))+ geom_point()
+ggplot(data =Synchro, aes(x = Height )) + geom_histogram(fill = "blue")
+
+
+
+Medals <- read.csv('/Users/annashukhter/Downloads/medals.csv')
+Medals %>% filter(Medals$Season == "Summer")-> Summer1
+ggplot(data = Summer1, aes(x = Medal , fill = as.factor(Medal))) + geom_bar()
+ggplot(data =Summer1, aes(x = Age))+ geom_histogram(fill = "blue")
+
+
+
+Fina <- read.csv('/Users/annashukhter/Downloads/FINA.csv')
+ggplot(data = Fina, aes(x = Edition, y = Athletes))+ geom_point()
+
